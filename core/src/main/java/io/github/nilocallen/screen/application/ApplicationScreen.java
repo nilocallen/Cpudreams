@@ -6,21 +6,22 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
-import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.*;
+import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.ScreenUtils;
 import io.github.nilocallen.CpuDreams;
+import io.github.nilocallen.ui.CustomNode;
+import io.github.nilocallen.ui.DragAndDropManager;
 
 public class ApplicationScreen implements Screen {
 
     private final CpuDreams cpuDreams;
     private Stage uiStage;
     private Skin skin;
+    private final DragAndDropManager dragAndDrop = new DragAndDropManager(skin);
 
     public ApplicationScreen(CpuDreams cpuDreams) {
         this.cpuDreams = cpuDreams;
@@ -35,36 +36,62 @@ public class ApplicationScreen implements Screen {
         Table root = new Table();
         root.setDebug(true);
         root.setFillParent(true);
-        root.top().left(); // Align the table itself
+        root.top().left();
         uiStage.addActor(root);
 
+        /* Toolbox */
         Table toolbox = new Table();
-        toolbox.setBackground(createColorDrawable(Color.WHITE));
-        toolbox.top().left(); // Align contents
-        toolbox.defaults().pad(5).width(100).height(40);
-        for(int i = 0; i < 10; i++) {
-            toolbox.add(new TextButton("AND", skin));
-            toolbox.add(new TextButton("OR", skin));
-            toolbox.add(new TextButton("NOT", skin));
-        }
+        toolbox.setBackground(createColorDrawable(Color.DARK_GRAY));
+        toolbox.top().left();
+        toolbox.defaults().pad(5).width(200); // Adjust width as needed
 
-        ScrollPane scrollPane = new ScrollPane(toolbox);
-        scrollPane.setScrollingDisabled(false, true);
-        scrollPane.setFadeScrollBars(false);
-        scrollPane.setScrollbarsOnTop(true);
-        scrollPane.setOverscroll(false, false);
-        scrollPane.setForceScroll(true, false);
+        // Toolbox Tree
+        CustomNode defaultFolder = createFolder("Default");
+        defaultFolder.add(createToolboxItem("AND"));
+        defaultFolder.add(createToolboxItem("NOT"));
 
-        Table scrollContainer = new Table();
-        scrollContainer.padLeft(20).padRight(20).top().left();
-        scrollContainer.add(scrollPane).expandX().fillX();
+        Tree<CustomNode, ?> toolboxTree = new Tree<>(skin);
+        toolboxTree.add(defaultFolder);
 
-        root.add(scrollContainer).expandX().fillX().top().left();
+        // Put the Tree inside a ScrollPane
+        ScrollPane toolboxScrollPane = new ScrollPane(toolboxTree, skin);
+        toolboxScrollPane.setFadeScrollBars(false);
+        toolboxScrollPane.setScrollingDisabled(true, false); // only vertical scroll
+
+        // Add scrollPane to toolbox
+        toolbox.add(toolboxScrollPane).grow().pad(20);
+
+        // Add toolbox to root
+        root.add(toolbox).expandY().fillY().top().left().width(250); // fixed width
     }
 
+    private CustomNode createFolder(String name){
+        Label label = new Label(name, skin);
+        label.setColor(Color.SKY);
+        label.setFontScale(1.1f);
+        label.setAlignment(Align.left);
+        label.setTouchable(Touchable.enabled);
 
+        Table wrapper = new Table();
+        wrapper.setBackground(createColorDrawable(Color.valueOf("#3C3F41")));
+        wrapper.pad(5);
+        wrapper.add(label).left().expandX();
 
-    private Drawable createColorDrawable(Color color) {
+        return new CustomNode(wrapper);
+    }
+
+    private CustomNode createToolboxItem(String name) {
+        TextButton button = new TextButton(name, skin);
+        button.getLabel().setFontScale(0.9f);
+        button.getLabel().setColor(Color.WHITE);
+        button.pad(5);
+        button.setBackground(createColorDrawable(Color.valueOf("#3C3F41"))); // Default background
+        dragAndDrop.createDragSource(button, name);
+
+        return new CustomNode(button);
+    }
+
+    public static Drawable createColorDrawable(Color color) {
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pixmap.setColor(color);
         pixmap.fill();
@@ -73,9 +100,12 @@ public class ApplicationScreen implements Screen {
         return new TextureRegionDrawable(new TextureRegion(texture));
     }
 
+    public Skin getSkin() {
+        return skin;
+    }
 
     /**
-     * Called when this screen becomes the current screen for a {@link Game}.
+     * Called when this screen becomes the current screen for a { Game}.
      */
     @Override
     public void show() {
@@ -89,7 +119,7 @@ public class ApplicationScreen implements Screen {
      */
     @Override
     public void render(float delta) {
-        ScreenUtils.clear(Color.DARK_GRAY);
+        ScreenUtils.clear(Color.SLATE);
         cpuDreams.uiViewport.apply(true);
 
         uiStage.act(delta);
@@ -112,7 +142,7 @@ public class ApplicationScreen implements Screen {
     }
 
     /**
-     * Called when this screen is no longer the current screen for a {@link Game}.
+     * Called when this screen is no longer the current screen for a {Game}.
      */
     @Override
     public void hide() {
