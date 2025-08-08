@@ -33,36 +33,45 @@ public class ApplicationScreen implements Screen {
     }
 
     private void setupUI() {
+
+        float horizontalPadding = 20f;
+        float verticalPadding = 15f;
+        float toolboxHeight = 100f;
+
         Table root = new Table();
-        root.setDebug(true);
+        //root.setDebug(true);
         root.setFillParent(true);
-        root.top().left();
         uiStage.addActor(root);
 
-        /* Toolbox */
-        Table toolbox = new Table();
-        toolbox.setBackground(createColorDrawable(Color.DARK_GRAY));
-        toolbox.top().left();
-        toolbox.defaults().pad(5).width(200); // Adjust width as needed
+        /* Circuit workspace */
+        Table workspace = new Table();
+        workspace.setDebug(true);
 
-        // Toolbox Tree
-        CustomNode defaultFolder = createFolder("Default");
-        defaultFolder.add(createToolboxItem("AND"));
-        defaultFolder.add(createToolboxItem("NOT"));
+        /* Toolbox content table */
+        Table toolboxContent = new Table();
+        toolboxContent.setBackground(createColorDrawable(Color.DARK_GRAY));
+        toolboxContent.defaults().pad(5);
+        toolboxContent.left(); // Aligns content left
 
-        Tree<CustomNode, ?> toolboxTree = new Tree<>(skin);
-        toolboxTree.add(defaultFolder);
+        toolboxContent.add(createToolboxItem("AND"));
+        toolboxContent.add(createToolboxItem("OR"));
 
-        // Put the Tree inside a ScrollPane
-        ScrollPane toolboxScrollPane = new ScrollPane(toolboxTree, skin);
+        // ScrollPane only wraps toolboxContent
+        ScrollPane toolboxScrollPane = new ScrollPane(toolboxContent, skin);
         toolboxScrollPane.setFadeScrollBars(false);
-        toolboxScrollPane.setScrollingDisabled(true, false); // only vertical scroll
+        toolboxScrollPane.setScrollingDisabled(false, true); // only horizontal scroll
 
-        // Add scrollPane to toolbox
-        toolbox.add(toolboxScrollPane).grow().pad(20);
+        root.top().left();
+        root.add(workspace)
+            .expand().fill()
+            .padLeft(horizontalPadding).padRight(horizontalPadding).padBottom(verticalPadding).padTop(verticalPadding)
+            .row();
 
-        // Add toolbox to root
-        root.add(toolbox).expandY().fillY().top().left().width(250); // fixed width
+        root.add(toolboxScrollPane)
+            .expandX().fillX()
+            .padLeft(horizontalPadding).padRight(horizontalPadding).padBottom(verticalPadding)
+            .height(toolboxHeight)
+            .bottom();
     }
 
     private CustomNode createFolder(String name){
@@ -80,7 +89,7 @@ public class ApplicationScreen implements Screen {
         return new CustomNode(wrapper);
     }
 
-    private CustomNode createToolboxItem(String name) {
+    private TextButton createToolboxItem(String name) {
         TextButton button = new TextButton(name, skin);
         button.getLabel().setFontScale(0.9f);
         button.getLabel().setColor(Color.WHITE);
@@ -88,7 +97,7 @@ public class ApplicationScreen implements Screen {
         button.setBackground(createColorDrawable(Color.valueOf("#3C3F41"))); // Default background
         dragAndDrop.createDragSource(button, name);
 
-        return new CustomNode(button);
+        return button;
     }
 
     public static Drawable createColorDrawable(Color color) {
